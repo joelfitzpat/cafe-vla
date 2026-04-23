@@ -1,0 +1,13 @@
+services:
+  ros2_vla:
+    build: .
+    container_name: cafe_vla
+    volumes:
+      - ./ros2_ws:/ros2_ws
+      # HuggingFace cache — avoids re-downloading 15 GB weights on rebuild
+      - ${USERPROFILE}/.cache/huggingface:/root/.cache/huggingface
+    environment:
+      - ROS_DOMAIN_ID=0
+    stdin_open: true
+    tty: true
+    command: /bin/bash
