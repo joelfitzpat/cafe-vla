@@ -1,7 +1,7 @@
 # Docker Environment Setup — Café VLA Robot
 
 ## Overview
-ROS 2 Humble + OpenVLA-OFT inference pipeline running in Docker.
+ROS 2 Jazzy + OpenVLA-OFT inference pipeline running in Docker.
 CPU-only on dev machine. GPU setup deferred to project machine.
 
 ## Folder Structure
@@ -52,13 +52,13 @@ docker exec -it cafe_vla bash
 
 ### Terminal A — Camera stub (publishes fake frames)
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 python3 /ros2_ws/src/camera_stub_rand_node.py
 ```
 
 ### Terminal B — VLA inference node
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 python3 /ros2_ws/src/vla_inference_node.py
 ```
 First run downloads ~15 GB of model weights from HuggingFace.
@@ -69,7 +69,7 @@ Weights are cached at `~/.cache/huggingface` (mounted from Windows host).
 
 ### Terminal C — Monitor output
 ```bash
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 ros2 topic echo /cafe/action
 ```
 

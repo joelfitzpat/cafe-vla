@@ -5,9 +5,17 @@ services:
     volumes:
       - ./ros2_ws:/ros2_ws
       # HuggingFace cache — avoids re-downloading 15 GB weights on rebuild
-      - ${USERPROFILE}/.cache/huggingface:/root/.cache/huggingface
+      - C:/Users/joelf/.cache/huggingface:/root/.cache/huggingface
     environment:
       - ROS_DOMAIN_ID=0
+      - DISPLAY=host.docker.internal:0.0
     stdin_open: true
     tty: true
     command: /bin/bash
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

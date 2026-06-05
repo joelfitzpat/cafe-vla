@@ -1,0 +1,241 @@
+<?xml version="1.0" ?>
+<!--
+  cafe.world — Gazebo Harmonic (gz-sim) SDF world.
+
+  Layout (top-down, +x is right, +y is up):
+    Robot spawns at (-2.5, 0) facing +x.
+    Delivery table at (3.2, 0).
+    Three obstacle boxes in between.
+    8 x 8 m room.
+
+  The robot and camera sensor are embedded directly in this SDF file
+  (cleaner than URDF + spawn_entity for Gazebo Harmonic).
+  Camera publishes gz images to /cafe/camera/image_raw, which
+  ros_gz_bridge forwards to the matching ROS 2 topic.
+-->
+<sdf version="1.8">
+  <world name="cafe">
+
+    <!-- ── System plugins required by Gazebo Harmonic ─────────────────── -->
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"/>
+    <!-- Sensors plugin drives camera rendering.
+         LIBGL_ALWAYS_SOFTWARE=1 is set in the launch file so ogre2
+         falls back to Mesa software rendering on CPU-only machines. -->
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+
+    <!-- ── Lighting ───────────────────────────────────────────────────── -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.9 0.9 0.9 1</diffuse>
+      <specular>0.3 0.3 0.3 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- ── Ground plane ───────────────────────────────────────────────── -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry><plane><normal>0 0 1</normal></plane></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane><normal>0 0 1</normal><size>20 20</size></plane>
+          </geometry>
+          <material>
+            <ambient>0.8 0.8 0.8 1</ambient>
+            <diffuse>0.8 0.8 0.8 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── Room walls (8 x 8 m, 2.5 m tall) ──────────────────────────── -->
+    <model name="wall_north">
+      <static>true</static>
+      <pose>0 4 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>8.2 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>8.2 0.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.85 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_south">
+      <static>true</static>
+      <pose>0 -4 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>8.2 0.2 2.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>8.2 0.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.85 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_east">
+      <static>true</static>
+      <pose>4 0 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 8.2 2.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.2 8.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.85 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_west">
+      <static>true</static>
+      <pose>-4 0 1.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.2 8.2 2.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.2 8.2 2.5</size></box></geometry>
+          <material><ambient>0.85 0.85 0.85 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── Delivery table ─────────────────────────────────────────────── -->
+    <model name="delivery_table">
+      <static>true</static>
+      <pose>3.2 0 0.4 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>1.0 0.6 0.8</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>1.0 0.6 0.8</size></box></geometry>
+          <material><ambient>0.55 0.35 0.15 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── Obstacles ──────────────────────────────────────────────────── -->
+    <model name="obstacle_1">
+      <static>true</static>
+      <pose>0.8 1.1 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.4 0.4 0.5</size></box></geometry>
+          <material><ambient>0.2 0.3 0.8 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obstacle_2">
+      <static>true</static>
+      <pose>1.9 -1.0 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.4 0.4 0.5</size></box></geometry>
+          <material><ambient>0.8 0.2 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obstacle_3">
+      <static>true</static>
+      <pose>2.5 0.7 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="col"><geometry><box><size>0.4 0.4 0.5</size></box></geometry></collision>
+        <visual name="vis">
+          <geometry><box><size>0.4 0.4 0.5</size></box></geometry>
+          <material><ambient>0.2 0.7 0.2 1</ambient></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- ── Robot with camera sensor ──────────────────────────────────── -->
+    <!--
+      Embedded directly in SDF rather than spawned from URDF — this is
+      the idiomatic approach for Gazebo Harmonic. URDF is kept in
+      ros2_ws/urdf/ as a reference for future nav/TF work.
+
+      Model origin at ground level (-2.5, 0, 0).
+      base_link centre at z=0.2 (body sits on the ground).
+      camera_link at front-top of body, z≈0.28 m in world frame.
+    -->
+    <model name="cafe_robot">
+      <pose>-2.5 0 0 0 0 0</pose>
+
+      <link name="base_link">
+        <pose>0 0 0.2 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>0.3 0.3 0.4</size></box></geometry>
+          <material>
+            <ambient>0.3 0.3 0.3 1</ambient>
+            <diffuse>0.3 0.3 0.3 1</diffuse>
+          </material>
+        </visual>
+        <collision name="collision">
+          <geometry><box><size>0.3 0.3 0.4</size></box></geometry>
+        </collision>
+        <inertial>
+          <mass>5.0</mass>
+          <inertia>
+            <ixx>0.1042</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.1042</iyy><iyz>0</iyz>
+            <izz>0.075</izz>
+          </inertia>
+        </inertial>
+      </link>
+
+      <link name="camera_link">
+        <!-- 0.15 m forward, 0.08 m above base_link centre → ~0.28 m world height -->
+        <pose relative_to="base_link">0.15 0 0.08 0 0 0</pose>
+        <visual name="visual">
+          <geometry><box><size>0.05 0.05 0.05</size></box></geometry>
+          <material><ambient>0.1 0.1 0.1 1</ambient></material>
+        </visual>
+        <inertial>
+          <mass>0.05</mass>
+          <inertia>
+            <ixx>0.0000208</ixx><ixy>0</ixy><ixz>0</ixz>
+            <iyy>0.0000208</iyy><iyz>0</iyz>
+            <izz>0.0000208</izz>
+          </inertia>
+        </inertial>
+
+        <sensor name="cafe_camera" type="camera">
+          <always_on>true</always_on>
+          <update_rate>5</update_rate>
+          <!-- gz topic — ros_gz_bridge maps this to the ROS 2 topic -->
+          <topic>/cafe/camera/image_raw</topic>
+          <camera>
+            <!-- ~60 degree horizontal FOV -->
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>224</width>
+              <height>224</height>
+              <format>R8G8B8</format>
+            </image>
+            <clip>
+              <near>0.05</near>
+              <far>20.0</far>
+            </clip>
+          </camera>
+        </sensor>
+      </link>
+
+      <joint name="camera_joint" type="fixed">
+        <parent>base_link</parent>
+        <child>camera_link</child>
+      </joint>
+
+    </model>
+
+  </world>
+</sdf>

@@ -1,0 +1,100 @@
+from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable
+from launch_param_builder import load_xacro
+from launch_ros.actions import Node
+from ament_index_python.packages import get_package_share_directory
+from os.path import join
+from launch.substitutions import Command
+from pathlib import Path
+import os
+
+def generate_launch_description():
+
+    krytn_share = get_package_share_directory("krytn")
+    install_share = str(Path(krytn_share).parent)  # e.g. /ros2_ws/install/share
+
+    # Set explicitly so Gazebo can resolve model://krytn/worlds/Cafe regardless
+    # of whether the Dockerfile ENV was inherited by the subprocess.
+    set_gz_resource_path = SetEnvironmentVariable(
+        'GZ_SIM_RESOURCE_PATH',
+        install_share + ':/opt/ros/jazzy/share'
+    )
+
+    # Start a simulation with the cafe world
+    cafe_world_uri = join(krytn_share, "worlds", "cafe.sdf")
+    path = join(get_package_share_directory("ros_gz_sim"), "launch", "gz_sim.launch.py")
+
+    gazebo_sim = IncludeLaunchDescription(path,
+                                          launch_arguments=[("gz_args", '-r '+ cafe_world_uri)])
+
+    # Create a robot in the world.
+    # Steps: 
+    # 1. Process a file using the xacro tool to get an xml file containing the robot description.
+    # 2. Publish this robot description using a ros topic so all nodes can know about the joints of the robot. 
+    # 3. Spawn a simulated robot in the gazebo simulation using the published robot description topic. 
+
+    # Step 1. Process robot file. 
+    robot_file = join(get_package_share_directory("krytn"), "robot_description","krytn.urdf.xacro")
+    robot_xml = load_xacro(Path(robot_file))
+
+    #Step 2. Publish robot file to ros topic /robot_description & static joint positions to /tf
+    robot_state_publisher = Node(
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        name='robot_state_publisher',
+        output='both',
+        parameters=[{'robot_description':robot_xml, 
+                     'use_sim_time':True}],
+    )
+
+    # Step 3. Spawn a robot in gazebo by listening to the published topic.
+    robot = Node(
+        package='ros_gz_sim',
+        executable="create",
+        arguments=[
+            "-topic", "/robot_description", 
+            "-z", "0.5",
+        ],
+        name="spawn_robot",
+        output="both"
+    )
+
+    # Gazebo Bridge: This brings data (sensors/clock) out of gazebo into ROS.
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+                   '/lidar@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
+                   '/lidar/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+                   '/realsense/image@sensor_msgs/msg/Image[gz.msgs.Image',
+                   '/realsense/depth@sensor_msgs/msg/Image[gz.msgs.Image',
+                   '/realsense/points@sensor_msgs/msg/PointCloud2[gz.msgs.PointCloudPacked',
+                   '/model/krytn/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
+                   '/model/krytn/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
+                   '/model/krytn/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
+                   '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
+                   '/entrance_camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+                   '/far_camera/image_raw@sensor_msgs/msg/Image[gz.msgs.Image',
+                   ],
+        output='screen',
+        remappings=[('/model/krytn/cmd_vel','/cmd_vel_smoothed'),
+                   ('/model/krytn/tf','/tf'),
+                   ('/model/krytn/odometry','/odom')]
+        )
+
+ 
+    # Fix Frames while we wait for merged changes to make their way into released packages: 
+    # https://github.com/gazebosim/gz-sensors/pull/446/commits/277d3946be832c14391b6feb6971e243f1968486 
+    # This fix allows us to specify the frame for the sensor rather than create a fixed transform here. 
+    static_pub = Node(package="tf2_ros", 
+                      executable="static_transform_publisher",
+                      arguments=["0","0","0","0","0","0", "lidar_2d_link", "krytn/base_footprint/lidar_2d_v1", ])
+    
+    static_pub2 = Node(package="tf2_ros", 
+                      executable="static_transform_publisher",
+                      arguments=["0","0","0","0","0","0",  "realsense_link", "krytn/base_footprint/realsense_d435"])
+
+  
+    return LaunchDescription([set_gz_resource_path,
+                              gazebo_sim, bridge, robot,
+                              robot_state_publisher, static_pub, static_pub2])
