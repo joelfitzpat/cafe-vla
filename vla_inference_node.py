@@ -9,6 +9,7 @@ skipped while inference is in progress.
 """
 
 import json
+import os
 import threading
 import numpy as np
 import sys
@@ -16,7 +17,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 
-sys.path.insert(0, '/opt/openvla-oft')
+sys.path.insert(0, os.environ.get('OPENVLA_PATH', '/opt/openvla-oft'))
 from experiments.robot.openvla_utils import (
     get_action_head,
     get_processor,
